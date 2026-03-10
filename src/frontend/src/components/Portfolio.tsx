@@ -282,12 +282,11 @@ export default function Portfolio() {
           style={{ background: "oklch(0.65 0.25 285)" }}
         />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 py-20 flex flex-col items-center text-center">
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="order-2 md:order-1"
           >
             <motion.div variants={fadeUp} className="mb-4">
               <span className="inline-flex items-center gap-2 text-xs font-mono tracking-widest uppercase px-3 py-1.5 rounded-full border border-primary/30 text-primary bg-primary/5">
@@ -305,12 +304,15 @@ export default function Portfolio() {
             </motion.h1>
             <motion.p
               variants={fadeUp}
-              className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-8 max-w-lg"
+              className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-8 max-w-lg mx-auto"
             >
               Building intelligent systems that improve efficiency in
               industries, finance, and public services.
             </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
+            <motion.div
+              variants={fadeUp}
+              className="flex flex-wrap justify-center gap-3"
+            >
               <Button
                 onClick={() => scrollTo("#projects")}
                 className="font-display font-semibold px-6 py-2.5 glow-primary transition-all hover:scale-105"
@@ -327,45 +329,6 @@ export default function Portfolio() {
                 Contact Me
               </Button>
             </motion.div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              duration: 0.8,
-              delay: 0.2,
-              ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
-            }}
-            className="order-1 md:order-2 flex justify-center"
-          >
-            <div className="relative">
-              <div
-                className="absolute inset-0 rounded-full blur-2xl opacity-40 scale-110"
-                style={{
-                  background:
-                    "linear-gradient(135deg, oklch(0.75 0.2 210), oklch(0.65 0.25 285))",
-                }}
-              />
-              <div
-                className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-full border-2 overflow-hidden animate-float"
-                style={{ borderColor: "oklch(0.75 0.2 210 / 0.6)" }}
-              >
-                <img
-                  src="/assets/generated/avatar-transparent.dim_200x200.png"
-                  alt="Sasi Geethika Podila"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div
-                className="absolute -inset-4 rounded-full border opacity-20"
-                style={{ borderColor: "oklch(0.75 0.2 210)" }}
-              />
-              <div
-                className="absolute -inset-8 rounded-full border opacity-10"
-                style={{ borderColor: "oklch(0.65 0.25 285)" }}
-              />
-            </div>
           </motion.div>
         </div>
 
