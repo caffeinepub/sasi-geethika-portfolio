@@ -1,9 +1,11 @@
+import { ExternalBlob } from "@/backend";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   ArrowRight,
   Award,
@@ -12,17 +14,22 @@ import {
   Code2,
   Cpu,
   ExternalLink,
+  FileText,
+  GraduationCap,
   Linkedin,
+  LogIn,
+  LogOut,
   Mail,
   Menu,
   Rocket,
   Send,
   Sparkles,
+  Upload,
   Users,
   X,
 } from "lucide-react";
 import { AnimatePresence, type Variants, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const NAV_LINKS = [
@@ -31,6 +38,7 @@ const NAV_LINKS = [
   { label: "Skills", href: "#skills" },
   { label: "Achievements", href: "#achievements" },
   { label: "Projects", href: "#projects" },
+  { label: "Certificates", href: "#certificates" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -95,9 +103,9 @@ const ACHIEVEMENTS = [
   },
   {
     icon: <Sparkles className="w-5 h-5" />,
-    title: "Career Guidance Ideathon",
-    org: "Ideathon Competition",
-    desc: "Conceived and presented an AI-powered career guidance application that recommends personalized career paths.",
+    title: "Invenza Ideathon",
+    org: "Geethanjali College of Engineering and Technology",
+    desc: "Conceived and presented an AI-powered application at the Invenza Ideathon conducted at Geethanjali College of Engineering and Technology.",
     ocid: "achievements.item.3",
   },
 ];
@@ -609,6 +617,9 @@ export default function Portfolio() {
         </div>
       </section>
 
+      {/* ── CERTIFICATES ── */}
+      <CertificatesSection actor={actor} />
+
       {/* ── CONTACT ── */}
       <section id="contact" className="py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
@@ -820,5 +831,304 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       </span>
       <span className="text-sm text-foreground/80">{value}</span>
     </div>
+  );
+}
+
+// ── CERTIFICATES SECTION COMPONENT ──
+function CertificatesSection({
+  actor,
+}: { actor: import("@/backend").backendInterface | null }) {
+  const {
+    identity,
+    login,
+    clear: logout,
+    isInitializing,
+  } = useInternetIdentity();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [certificates, setCertificates] = useState<
+    import("@/backend").CertificateRecord[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [certTitle, setCertTitle] = useState("");
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!actor) return;
+    const principal = identity?.getPrincipal().toString();
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [certs, admin] = await Promise.all([
+          actor.getAllCertificates(),
+          actor.isCallerAdmin(),
+        ]);
+        setCertificates(certs);
+        setIsAdmin(admin);
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    };
+    void principal;
+    load();
+  }, [actor, identity]);
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!actor || !certFile || !certTitle.trim()) {
+      toast.error("Please provide a title and select a file.");
+      return;
+    }
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const bytes = new Uint8Array(await certFile.arrayBuffer());
+      const blob = ExternalBlob.fromBytes(bytes).withUploadProgress((pct) =>
+        setUploadProgress(pct),
+      );
+      await actor.uploadCertificate(certTitle.trim(), blob);
+      toast.success("Certificate uploaded!");
+      setCertTitle("");
+      setCertFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      const certs = await actor.getAllCertificates();
+      setCertificates(certs);
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const isPdf = (url: string) =>
+    url.toLowerCase().includes(".pdf") ||
+    url.toLowerCase().includes("application/pdf");
+
+  return (
+    <section id="certificates" className="py-24 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          <motion.div
+            variants={fadeUp}
+            className="mb-12 flex flex-col sm:flex-row sm:items-end gap-4 justify-between"
+          >
+            <div>
+              <SectionLabel>Certificates</SectionLabel>
+              <h2 className="font-display font-bold text-3xl sm:text-4xl mt-3">
+                My <span className="gradient-text">Certifications</span>
+              </h2>
+              <p className="text-muted-foreground mt-3 max-w-lg">
+                Academic and professional certificates earned through
+                competitions, workshops, and training programs.
+              </p>
+            </div>
+            {!isInitializing && (
+              <div>
+                {identity ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={logout}
+                    className="gap-2 border-border/50 text-muted-foreground hover:text-foreground"
+                    data-ocid="certificates.toggle"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={login}
+                    className="gap-2 border-primary/40 text-primary hover:bg-primary/10"
+                    data-ocid="certificates.toggle"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Admin Login
+                  </Button>
+                )}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Upload form — admin only */}
+          {isAdmin && identity && (
+            <motion.div variants={fadeUp} className="mb-10">
+              <form
+                onSubmit={handleUpload}
+                className="card-glass rounded-2xl p-6"
+                data-ocid="certificates.panel"
+              >
+                <p className="text-sm font-mono text-primary tracking-widest uppercase mb-5">
+                  Upload Certificate
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                  <div className="space-y-1.5">
+                    <Label
+                      htmlFor="cert-title"
+                      className="text-xs text-muted-foreground font-mono uppercase tracking-wider"
+                    >
+                      Certificate Title
+                    </Label>
+                    <Input
+                      id="cert-title"
+                      placeholder="e.g. Python Fundamentals"
+                      value={certTitle}
+                      onChange={(e) => setCertTitle(e.target.value)}
+                      className="bg-muted/30 border-border/50 focus:border-primary/60"
+                      data-ocid="certificates.input"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label
+                      htmlFor="cert-file"
+                      className="text-xs text-muted-foreground font-mono uppercase tracking-wider"
+                    >
+                      File (Image or PDF)
+                    </Label>
+                    <input
+                      ref={fileInputRef}
+                      id="cert-file"
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary/15 file:text-primary hover:file:bg-primary/25 cursor-pointer"
+                      data-ocid="certificates.upload_button"
+                    />
+                  </div>
+                </div>
+                {uploading && (
+                  <div
+                    className="mb-4 space-y-1.5"
+                    data-ocid="certificates.loading_state"
+                  >
+                    <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-muted/40 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${uploadProgress}%`,
+                          background:
+                            "linear-gradient(90deg, oklch(0.75 0.2 210), oklch(0.65 0.25 285))",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={uploading}
+                  className="font-display font-semibold glow-primary"
+                  data-ocid="certificates.submit_button"
+                >
+                  {uploading ? (
+                    <>
+                      <span className="mr-2 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 w-4 h-4" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+              </form>
+            </motion.div>
+          )}
+
+          {/* Certificate grid */}
+          {loading ? (
+            <motion.div
+              variants={fadeUp}
+              className="flex items-center justify-center py-16"
+              data-ocid="certificates.loading_state"
+            >
+              <span className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </motion.div>
+          ) : certificates.length === 0 ? (
+            <motion.div
+              variants={fadeUp}
+              className="text-center py-16 text-muted-foreground"
+              data-ocid="certificates.empty_state"
+            >
+              <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-mono text-sm">No certificates uploaded yet.</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={fadeUp}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            >
+              {certificates.map((cert, idx) => {
+                const url = cert.blob.getDirectURL();
+                const pdf = isPdf(url);
+                return (
+                  <a
+                    key={cert.name}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="card-glass rounded-2xl overflow-hidden hover:glow-primary transition-all duration-300 group flex flex-col"
+                    data-ocid={`certificates.item.${idx + 1}`}
+                  >
+                    <div
+                      className="h-1.5"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, oklch(0.75 0.2 210), oklch(0.65 0.25 285))",
+                      }}
+                    />
+                    {pdf ? (
+                      <div className="flex-1 flex flex-col items-center justify-center py-10 gap-3">
+                        <div
+                          className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                          style={{
+                            background: "oklch(0.65 0.25 285 / 0.12)",
+                            color: "oklch(0.65 0.25 285)",
+                          }}
+                        >
+                          <FileText className="w-8 h-8" />
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                          PDF Document
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="relative h-44 overflow-hidden bg-muted/20">
+                        <img
+                          src={url}
+                          alt={cert.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4 flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {cert.name}
+                      </p>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 group-hover:text-primary transition-colors" />
+                    </div>
+                  </a>
+                );
+              })}
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+    </section>
   );
 }

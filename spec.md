@@ -1,27 +1,23 @@
 # Sasi Geethika Portfolio
 
 ## Current State
-New project, no existing code.
+Full portfolio with hero, about, skills, achievements, projects, and contact sections. Achievements section has a card titled "Career Guidance Ideathon" with org "Ideathon Competition".
 
 ## Requested Changes (Diff)
 
 ### Add
-- Personal portfolio website for Sasi Geethika Podila
-- Home/Hero section with name, tagline, and brief intro
-- About Me section with interests and exploration areas
-- Skills section: Technical Skills, AI & Technology Interests, Soft Skills
-- Achievements & Activities section listing hackathon participations
-- Projects section with the AI career guidance app concept
-- Contact section with email and LinkedIn link
-- Smooth navigation between sections
+- Certificates section (after achievements) where the owner can log in, upload certificate images/PDFs, and display them. Visitors see all uploaded certificates.
 
 ### Modify
-N/A
+- ACHIEVEMENTS[2].title: "Career Guidance Ideathon" → "Invenza Ideathon"
+- ACHIEVEMENTS[2].org: "Ideathon Competition" → "Geethanjali College of Engineering and Technology"
+- NAV_LINKS: add "Certificates" → "#certificates"
 
 ### Remove
-N/A
+- Nothing
 
 ## Implementation Plan
-1. Backend: minimal (no dynamic data needed, static portfolio)
-2. Frontend: Single-page portfolio with sticky nav, hero, about, skills, achievements, projects, contact sections
-3. All content hardcoded from user-provided info
+1. Update ACHIEVEMENTS array in Portfolio.tsx for the renamed ideathon card.
+2. Add Certificates section using blob-storage for upload and display.
+3. Use authorization (Internet Identity) so only the owner can upload; all visitors can view.
+4. Add nav link for Certificates section.
