@@ -844,11 +844,10 @@ function CertificatesSection({
     clear: logout,
     isInitializing,
   } = useInternetIdentity();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [certificates, setCertificates] = useState<
     import("@/backend").CertificateRecord[]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [certTitle, setCertTitle] = useState("");
@@ -857,25 +856,19 @@ function CertificatesSection({
 
   useEffect(() => {
     if (!actor) return;
-    const principal = identity?.getPrincipal().toString();
     const load = async () => {
       setLoading(true);
       try {
-        const [certs, admin] = await Promise.all([
-          actor.getAllCertificates(),
-          actor.isCallerAdmin(),
-        ]);
+        const certs = await actor.getAllCertificates();
         setCertificates(certs);
-        setIsAdmin(admin);
       } catch {
         // ignore
       } finally {
         setLoading(false);
       }
     };
-    void principal;
     load();
-  }, [actor, identity]);
+  }, [actor]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -905,7 +898,7 @@ function CertificatesSection({
     }
   };
 
-  const isPdf = (url: string) =>
+  const _isPdf = (url: string) =>
     url.toLowerCase().includes(".pdf") ||
     url.toLowerCase().includes("application/pdf");
 
@@ -954,15 +947,15 @@ function CertificatesSection({
                     data-ocid="certificates.toggle"
                   >
                     <LogIn className="w-4 h-4" />
-                    Admin Login
+                    Login to Upload
                   </Button>
                 )}
               </div>
             )}
           </motion.div>
 
-          {/* Upload form — admin only */}
-          {isAdmin && identity && (
+          {/* Upload form — visible when logged in */}
+          {identity && (
             <motion.div variants={fadeUp} className="mb-10">
               <form
                 onSubmit={handleUpload}
@@ -1050,36 +1043,44 @@ function CertificatesSection({
             </motion.div>
           )}
 
-          {/* Certificate grid */}
-          {loading ? (
-            <motion.div
-              variants={fadeUp}
-              className="flex items-center justify-center py-16"
-              data-ocid="certificates.loading_state"
-            >
-              <span className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </motion.div>
-          ) : certificates.length === 0 ? (
-            <motion.div
-              variants={fadeUp}
-              className="text-center py-16 text-muted-foreground"
-              data-ocid="certificates.empty_state"
-            >
-              <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-mono text-sm">No certificates uploaded yet.</p>
-            </motion.div>
-          ) : (
-            <motion.div
-              variants={fadeUp}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-            >
-              {certificates.map((cert, idx) => {
-                const url = cert.blob.getDirectURL();
-                const pdf = isPdf(url);
-                return (
+          {/* Static certificates */}
+          {(() => {
+            const staticCerts = [
+              {
+                name: "National AI/ML Hackathon by Vivriti Capital",
+                image:
+                  "/assets/uploads/file_1-019d2b46-f9d9-74bd-863d-4c25dd704e09-1.jpeg",
+              },
+              {
+                name: "National AI/ML Hackathon by AVEVA",
+                image:
+                  "/assets/uploads/file_2-019d2b46-f9a7-714f-bd17-d402334ae835-2.jpeg",
+              },
+              {
+                name: "INVENZA'26",
+                image:
+                  "/assets/uploads/file_3-019d2b46-f999-72eb-98d6-d58eba347401-3.jpeg",
+              },
+              {
+                name: "IBM CERTIFICATION - Introduction to Generative AI",
+                image:
+                  "/assets/uploads/file_4-019d2b53-33d1-7717-aa33-2e9b8b3f6874-1.jpeg",
+              },
+            ];
+            const dynamicCerts = certificates.map((cert) => ({
+              name: cert.name,
+              image: cert.blob.getDirectURL(),
+            }));
+            const allCerts = [...staticCerts, ...dynamicCerts];
+            return (
+              <motion.div
+                variants={fadeUp}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              >
+                {allCerts.map((cert, idx) => (
                   <a
                     key={cert.name}
-                    href={url}
+                    href={cert.image}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="card-glass rounded-2xl overflow-hidden hover:glow-primary transition-all duration-300 group flex flex-col"
@@ -1092,30 +1093,13 @@ function CertificatesSection({
                           "linear-gradient(90deg, oklch(0.75 0.2 210), oklch(0.65 0.25 285))",
                       }}
                     />
-                    {pdf ? (
-                      <div className="flex-1 flex flex-col items-center justify-center py-10 gap-3">
-                        <div
-                          className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                          style={{
-                            background: "oklch(0.65 0.25 285 / 0.12)",
-                            color: "oklch(0.65 0.25 285)",
-                          }}
-                        >
-                          <FileText className="w-8 h-8" />
-                        </div>
-                        <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                          PDF Document
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="relative h-44 overflow-hidden bg-muted/20">
-                        <img
-                          src={url}
-                          alt={cert.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </div>
-                    )}
+                    <div className="relative h-44 overflow-hidden bg-muted/20">
+                      <img
+                        src={cert.image}
+                        alt={cert.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
                     <div className="p-4 flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-foreground truncate">
                         {cert.name}
@@ -1123,10 +1107,10 @@ function CertificatesSection({
                       <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 group-hover:text-primary transition-colors" />
                     </div>
                   </a>
-                );
-              })}
-            </motion.div>
-          )}
+                ))}
+              </motion.div>
+            );
+          })()}
         </motion.div>
       </div>
     </section>

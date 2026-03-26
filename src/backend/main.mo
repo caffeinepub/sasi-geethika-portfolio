@@ -1,17 +1,16 @@
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
-import Array "mo:core/Array";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
-import Migration "migration";
+
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
-import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Iter "mo:core/Iter";
 
-(with migration = Migration.run)
+
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
@@ -67,7 +66,7 @@ actor {
   };
 
   // Contact form submission - accessible to everyone including guests
-  public shared ({ caller }) func submitContact(name : Text, email : Text, message : Text) : async () {
+  public shared func submitContact(name : Text, email : Text, message : Text) : async () {
     let newMessage : Message = {
       name;
       email;
@@ -77,10 +76,10 @@ actor {
     nextMessageId += 1;
   };
 
-  // Certificate upload - admin only
+  // Certificate upload - any authenticated (non-anonymous) user
   public shared ({ caller }) func uploadCertificate(title : Text, blob : Storage.ExternalBlob) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can upload certificates");
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Please log in to upload certificates");
     };
 
     let newCertificate : CertificateRecord = {
@@ -100,12 +99,12 @@ actor {
   };
 
   // Get all certificates - public access
-  public query ({ caller }) func getAllCertificates() : async [CertificateRecord] {
+  public query func getAllCertificates() : async [CertificateRecord] {
     certificates.values().toArray();
   };
 
   // Get specific certificate - public access
-  public query ({ caller }) func getCertificate(id : Nat) : async ?CertificateRecord {
+  public query func getCertificate(id : Nat) : async ?CertificateRecord {
     certificates.get(id);
   };
 };
